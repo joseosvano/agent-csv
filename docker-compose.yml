@@ -15,7 +15,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend   # Pasta onde está o React e o Dockerfile do front
+      context: ./eda-frontend   # Pasta onde está o React e o Dockerfile do front
     container_name: csv-frontend
     ports:
       - "3000:80"
