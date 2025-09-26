@@ -1,0 +1,6 @@
+.env
+__pycache__
+venv
+trabalho_csv_agent
+files
+node_modules
