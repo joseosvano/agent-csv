@@ -24,23 +24,12 @@ if not os.path.exists("files"):
 api_key = os.getenv('OPENAI_API_KEY')
 agent = CSVAnalysisAgent(key=api_key)
 
-api_front_url = os.getenv('API_FRONT_URL')
+app = FastAPI(title="CSV Analysis Agent API")
 
-app = FastAPI(title="PHNS CSV Analysis Agent API")
-
-origins = [
-    api_front_url,
-    f'{api_front_url}:8080',
-    f'{api_front_url}:5173',
-    f'{api_front_url}:3000',
-    "meu-backend-fsrl.onrender.com:10000"
-]
-
-print(origins)
 # Configuração CORS para permitir requests do React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # porta do React
+    allow_origins=["http://localhost:5173"],  # porta do React
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,10 +59,6 @@ def fake_llm_response(question):
     # caso contrário, retorna texto
     return "Essa é uma resposta de texto da LLM."
 
-@app.get("/health")
-def read_health():
-    return {"status": "OK"}
-    
 @app.post("/ask")
 async def ask(pergunta: str = Form(...)):
     resposta = []
@@ -98,7 +83,7 @@ async def ask(pergunta: str = Form(...)):
             saida_json = None
 
         if eh_grafico(saida_json):
-            return gerar_grafico_automatico(saida_json)
+            return gerar_grafico(saida_json)
         else:
             # devolver resposta normal em texto
             return JSONResponse(content={"response": str(saida_json or saida_str)})

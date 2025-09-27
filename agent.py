@@ -1,7 +1,10 @@
 import pandas as pd
-from langchain_openai import ChatOpenAI
 from langchain_groq.chat_models import ChatGroq
-from langchain_experimental.agents import create_pandas_dataframe_agent
+from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+from langchain_openai import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain.schema import AIMessage, HumanMessage
+import pandas as pd
 
 class CSVAnalysisAgent:
     def __init__(self, key: str):
@@ -18,10 +21,15 @@ class CSVAnalysisAgent:
         )
 
         self.llm = ChatOpenAI(
-            model="gpt-4.1-nano",                    # modelo Groq
+            model="gpt-4.1-nano",
             temperature=0,
             api_key=key,
             base_url="https://api.openai.com/v1"
+        )
+        
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history", 
+            return_messages=True
         )
 
         self.llm_awa = ChatOpenAI(
@@ -41,7 +49,8 @@ class CSVAnalysisAgent:
             self.agent = create_pandas_dataframe_agent(
                 df=self.df,
                 llm=self.llm,
-                verbose=False,
+                verbose=True,
+                agent_executor_kwargs={"memory": self.memory},
                 allow_dangerous_code=True
             )
             return True

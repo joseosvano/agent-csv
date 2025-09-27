@@ -3,22 +3,27 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./backend    # Pasta onde está o main.py e requirements.txt
+      context: ./    # Pasta onde está o main.py e requirements.txt
     container_name: csv-backend
     ports:
-      - "8001:8001"
+      - "10000:8000"
+      - "8000:8000"
     environment:
-      - GROQ_API_KEY=${GROQ_API_KEY}     # Passe sua chave via .env ou variáveis do sistema
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}     # Passe sua chave via .env ou variáveis do sistema
     volumes:
       - ./backend/files:/app/files       # Persistência dos arquivos CSV
     restart: unless-stopped
 
   frontend:
     build:
-      context: ./eda-frontend   # Pasta onde está o React e o Dockerfile do front
+      context: ./frontend   # Pasta onde está o React e o Dockerfile do front
     container_name: csv-frontend
     ports:
       - "3000:80"
+    environment:
+      - VITE_URL_AGENT_API=${VITE_URL_AGENT_API}
+      - NODE_ENV=${NODE_ENV}
     depends_on:
       - backend
     restart: unless-stopped

@@ -11,7 +11,6 @@ import pandas as pd
 import os
 import shutil
 import io
-import re
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -24,23 +23,12 @@ if not os.path.exists("files"):
 api_key = os.getenv('OPENAI_API_KEY')
 agent = CSVAnalysisAgent(key=api_key)
 
-api_front_url = os.getenv('API_FRONT_URL')
+app = FastAPI(title="CSV Analysis Agent API")
 
-app = FastAPI(title="PHNS CSV Analysis Agent API")
-
-origins = [
-    api_front_url,
-    f'{api_front_url}:8080',
-    f'{api_front_url}:5173',
-    f'{api_front_url}:3000',
-    "meu-backend-fsrl.onrender.com:10000"
-]
-
-print(origins)
 # Configuração CORS para permitir requests do React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # porta do React
+    allow_origins=["http://localhost:5173"],  # porta do React
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,13 +58,8 @@ def fake_llm_response(question):
     # caso contrário, retorna texto
     return "Essa é uma resposta de texto da LLM."
 
-@app.get("/health")
-def read_health():
-    return {"status": "OK"}
-    
 @app.post("/ask")
 async def ask(pergunta: str = Form(...)):
-    resposta = []
     try:
         pergunta = f"""
         Você é um assistente que responde perguntas sobre dados em CSV.
@@ -92,24 +75,19 @@ async def ask(pergunta: str = Form(...)):
         saida_str = resposta.get("output", "").get("output", "")
 
         try:
-            saida_json = json.loads(limpar_markdown_json(saida_str))
+            saida_json = json.loads(saida_str)
         except Exception:
-            print("Resposta não é JSON válido")
             saida_json = None
 
         if eh_grafico(saida_json):
-            return gerar_grafico_automatico(saida_json)
+            gerar_grafico_automatico(saida_json)
         else:
             # devolver resposta normal em texto
             return JSONResponse(content={"response": str(saida_json or saida_str)})
     except Exception as e:
-        response_error = resposta.get("output", "")
-        if response_error:
-            return JSONResponse(content={"response": response_error})
         return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})
 
 def eh_grafico(resposta):
-    print("Verificando se é gráfico:", resposta)
     """
     Verifica se a resposta contém dados reais para gráfico.
     """
@@ -146,29 +124,8 @@ def eh_grafico(resposta):
             return True
         if all(isinstance(v, dict) and "mínimo" in v and "máximo" in v for v in resposta.values()):
             return True
-        if all(isinstance(v, dict) and "mean" in v and "max" in v and "min" in v for v in resposta.values()):
-            return True
-        if all(isinstance(v, dict) and "média" in v and "máximo" in v and "mínimo" in v for v in resposta.values()):
-            return True
-        if all(isinstance(v, dict) and "variable" in v and "max" in v and "min" in v for v in resposta.values()):
-            return True
     print("Resposta não é lista de dicts")
     return False
-
-def limpar_markdown_json(resposta: str) -> str:
-    """
-    Remove blocos de código Markdown do tipo ```json ... ``` ou ``` ... ``` da string.
-    Retorna apenas o conteúdo limpo que pode ser parseado como JSON.
-    """
-    if not isinstance(resposta, str):
-        return resposta  # Não é string, retorna como está
-
-    # Regex para remover qualquer bloco ```...```
-    resposta_limpa = re.sub(r'```.*?```', '', resposta, flags=re.DOTALL)
-    
-    # Remove espaços em excesso e quebras de linha no início/fim
-    resposta_limpa = resposta_limpa.strip()
-    return resposta_limpa
 
 def eh_grafico_old(resposta):
     """
@@ -198,126 +155,6 @@ def eh_grafico_old(resposta):
     print("Resposta não é lista de dicts")
     return False
 
-def tipo_grafico(resposta):
-    """
-    Detecta se a resposta da LLM pode ser transformada em gráfico.
-    Retorna o tipo de gráfico:
-        - "xy" → lista de dicts com x/y
-        - "categorical" → contagem de categorias
-        - "stats" → estatísticas numéricas
-        - None → não é gráfico
-    """
-
-    # 1️⃣ Lista de dicts com x/y
-    if isinstance(resposta, list) and all(isinstance(d, dict) for d in resposta):
-        # caso x/y
-        if all("x" in d and "y" in d for d in resposta):
-            return "xy"
-        # caso estatísticas (min/max ou variável)
-        if all("min" in d and "max" in d for d in resposta):
-            return "stats"
-        if all("variable" in d and "min" in d and "max" in d for d in resposta):
-            return "stats"
-
-    # 2️⃣ Distribuição categórica
-    if isinstance(resposta, dict):
-        for v in resposta.values():
-            # contagens
-            if isinstance(v, dict) and all(isinstance(count, int) for count in v.values()):
-                return "categorical"
-            # estatísticas numéricas
-            if isinstance(v, dict) and ("min" in v and "max" in v and "mean" in v):
-                return "stats"
-            if isinstance(v, dict) and ("mínimo" in v and "máximo" in v and "média" in v):
-                return "stats"
-
-    print("Resposta não é válida para gráfico")
-    return None
-
-def gerar_grafico(resposta):
-    print("Gerando gráfico com dados:")
-    """
-    Gera gráfico a partir da resposta da LLM.
-    Retorna BytesIO pronto para StreamingResponse.
-    """
-    tipo = tipo_grafico(resposta)
-    buf = BytesIO()
-    print("Tipo de gráfico detectado:", tipo)
-    if tipo == "xy":
-        df = pd.DataFrame(resposta)
-        plt.figure(figsize=(6,4))
-        plt.plot(df["x"], df["y"], marker='o')
-        plt.title("Gráfico gerado pela LLM")
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.grid(True)
-        plt.tight_layout()
-    
-    elif tipo == "categorical":
-        # pega a primeira chave categórica
-        for k, v in resposta.items():
-            if isinstance(v, dict) and all(isinstance(count, int) for count in v.values()):
-                categorias = list(v.keys())
-                counts = list(v.values())
-                plt.figure(figsize=(6,4))
-                plt.bar(categorias, counts)
-                plt.title(f"Distribuição de {k}")
-                plt.xlabel(k)
-                plt.ylabel("Contagem")
-                plt.xticks(rotation=45, ha="right")
-                plt.grid(True)
-                plt.tight_layout()
-                break
-    
-    elif tipo == "stats":
-        colunas = []
-        valores = []
-        label = ""
-
-        if isinstance(resposta, dict):
-            # Caso 1: resposta em formato dict com médias
-            for col, stats in resposta.items():
-                if isinstance(stats, dict) and "mean" in stats:
-                    colunas.append(col)
-                    valores.append(stats["mean"])
-                    label = "Mean"
-                elif isinstance(stats, dict) and "média" in stats:
-                    colunas.append(col)
-                    valores.append(stats["média"])
-                    label = "Média"
-
-        elif isinstance(resposta, list):
-            # Caso 2: resposta em formato lista de dicts (min/max/variable)
-            for item in resposta:
-                if "variable" in item and "min" in item and "max" in item:
-                    colunas.append(item["variable"])
-                    # exemplo: diferença entre max e min (faixa)
-                    valores.append(item["max"] - item["min"])
-                    label = "Amplitude (max-min)"
-
-        if colunas and valores:
-            plt.figure(figsize=(10,5))
-            plt.bar(colunas, valores)
-            plt.xticks(rotation=90)
-            plt.title("Estatísticas das variáveis")
-            plt.ylabel(label)
-            plt.grid(True)
-            plt.tight_layout()
-    
-    else:
-        raise ValueError("Resposta não é válida para gráfico")
-    
-    plt.savefig(buf, format="png")
-    plt.close()
-    buf.seek(0)
-
-    return StreamingResponse(
-        buf,
-        media_type="image/png",
-        headers={"Content-Disposition": "attachment; filename=grafico.png"}
-    )
-
-
 def gerar_grafico_automatico(dados):
     """
     Detecta automaticamente o tipo de dados e gera gráfico apropriado:
@@ -327,11 +164,14 @@ def gerar_grafico_automatico(dados):
     """
     print("Gerando gráfico automático com dados")
 
+    if isinstance(dados, dict):
+        print("Detectado dados de min/max para gráfico de barras")
+
     if all(isinstance(v, dict) and "min" in v and "max" in v for v in dados):
-        print("DEBUG: Detectado dados de min/max para gráfico de barras")
+        print("Detectado dados de min/max para gráfico de barras")
 
     if all(isinstance(v, dict) and "mínimo" in v and "máximo" in v for v in dados):
-        print("DEBUG: Detectado dados de mínimo/máximo para gráfico de barras")
+        print("Detectado dados de mínimo/máximo para gráfico de barras")
 
     # Caso seja histograma/distribution
     if isinstance(dados, list) and 'variable' in dados[0] and 'distribution' in dados[0]:
