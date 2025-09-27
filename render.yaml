@@ -1,0 +1,38 @@
+services:
+  # ======== FRONTEND ========
+  - type: web
+    name: meu-frontend
+    env: docker
+    plan: free
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_URL
+        value: https://meu-backend.onrender.com  # URL do backend
+    healthCheckPath: /
+    domains:
+      - meu-frontend.onrender.com
+
+  # ======== BACKEND ========
+  - type: web
+    name: meu-backend
+    env: docker
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # configure pelo painel
+    healthCheckPath: /health
+    domains:
+      - meu-backend.onrender.com
+
+# Se precisar de banco de dados gerenciado (ex.: PostgreSQL)
+databases:
+  - name: meu-banco
+    databaseName: appdb
+    plan: free
