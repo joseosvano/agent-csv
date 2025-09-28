@@ -3,7 +3,7 @@ version: "3.9"
 services:
   backend:
     build:
-      context: ./    # Pasta onde está o main.py e requirements.txt
+      context: ./backend    # Pasta onde está o main.py e requirements.txt
     container_name: csv-backend
     ports:
       - "10000:8000"
