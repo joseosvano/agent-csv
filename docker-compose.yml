@@ -4,7 +4,7 @@ services:
   backend:
     build:
       context: ./backend    # Pasta onde está o main.py e requirements.txt
-    container_name: csv-backend
+    container_name: backend
     ports:
       - "10000:8000"
       - "8000:8000"
@@ -18,7 +18,7 @@ services:
   frontend:
     build:
       context: ./frontend   # Pasta onde está o React e o Dockerfile do front
-    container_name: csv-frontend
+    container_name: frontend
     ports:
       - "3000:80"
     environment:
