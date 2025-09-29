@@ -20,7 +20,7 @@ if not os.path.exists("files"):
     os.makedirs("files")
 
 # Inicializar agente com Groq API Key
-api_key = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv('GROQ_API_KEY')
 agent = CSVAnalysisAgent(key=api_key)
 
 app = FastAPI(title="CSV Analysis Agent API")

@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import json
 import os
-from langchain.chat_models import ChatOpenAI
+from langchain_groq import ChatGroq  # Substitui ChatOpenAI
 from dotenv import load_dotenv
 
 app = FastAPI()
@@ -23,13 +23,15 @@ app.add_middleware(
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-api_key = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv('GROQ_API_KEY')  # Substitui OPENAI_API_KEY
 
-llm = ChatOpenAI(model_name="Meta-Llama-3-8B-Instruct", 
-                 temperature=0, 
-                 openai_api_key=api_key, 
-                 base_url="https://api.awanllm.com/v1"
+llm = ChatGroq(
+    model_name="llama-3.3-70b-versatile",  # Modelo disponível no Groq em set/2025
+    temperature=0,
+    api_key=api_key,
+    # base_url não é necessário, pois a API do Groq usa o endpoint padrão
 )
+
 csv_df = None
 csv_filename = None
 
@@ -92,18 +94,24 @@ async def ask(pergunta: str = Form(...)):
                 headers={"Content-Disposition": "attachment; filename=grafico.png"}
             )
 
-        # Caso contrário, chama OpenAI diretamente
+        # Caso contrário, chama Grok diretamente
         prompt = f"""
 Você é um assistente que responde perguntas sobre dados de CSV.
 Se a pergunta pedir gráfico, responda apenas com JSON no formato:
 [{{"x": "Seg", "y": 100}}, {{"x": "Ter", "y": 150}}]
 Nunca gere código Python.
 Pergunta: {pergunta}
+Dados do CSV: {json.dumps(csv_df.to_dict())}  # Inclui dados para contexto
 """
 
-        resposta_texto = llm.predict(prompt)
+        resposta_texto = llm.invoke(prompt).content  # Usa .invoke() em vez de .predict()
 
-        return JSONResponse(content={"response": resposta_texto})
+        # Tentar parsear como JSON se for gráfico
+        try:
+            resposta_json = json.loads(resposta_texto)
+            return JSONResponse(content={"response": resposta_texto})
+        except json.JSONDecodeError:
+            return JSONResponse(content={"response": resposta_texto})
 
     except Exception as e:
         return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})

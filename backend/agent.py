@@ -1,10 +1,7 @@
 import pandas as pd
-from langchain_groq.chat_models import ChatGroq
+from langchain_groq import ChatGroq  # Substitui ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import AIMessage, HumanMessage
-import pandas as pd
 
 class CSVAnalysisAgent:
     def __init__(self, key: str):
@@ -12,19 +9,12 @@ class CSVAnalysisAgent:
         self.df = None
         self.agent = None
 
-        # Inicializando ChatOpenAI para Groq
-        self.llm_groq = ChatGroq(
-            model="llama-3.3-70b-versatile",                    # modelo Groq
+        # Inicializando ChatGroq como o único LLM
+        self.llm = ChatGroq(
+            model="llama-3.3-70b-versatile",  # Modelo Groq, verifique disponibilidade
             temperature=0,
             api_key=key,
-            base_url="https://api.groq.com"
-        )
-
-        self.llm = ChatOpenAI(
-            model="gpt-4.1-nano",
-            temperature=0,
-            api_key=key,
-            base_url="https://api.openai.com/v1"
+            # base_url removido, usa o padrão https://api.groq.com/openai/v1
         )
         
         self.memory = ConversationBufferMemory(
@@ -32,20 +22,12 @@ class CSVAnalysisAgent:
             return_messages=True
         )
 
-        self.llm_awa = ChatOpenAI(
-            model="Meta-Llama-3-8B-Instruct",                    # modelo Groq
-            temperature=0,
-            api_key=key,
-            base_url="https://api.awanllm.com/v1"
-        )
-
     def load_file(self, file_path: str):
-        import pandas as pd
         try:
             self.df = pd.read_csv(file_path)
             self.current_file = file_path
 
-            # ⚠️ df primeiro, llm segundo, sem nomear
+            # Cria o agente usando apenas o LLM Groq
             self.agent = create_pandas_dataframe_agent(
                 df=self.df,
                 llm=self.llm,
