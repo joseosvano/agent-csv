@@ -114,4 +114,4 @@ Dados do CSV: {json.dumps(csv_df.to_dict())}  # Inclui dados para contexto
             return JSONResponse(content={"response": resposta_texto})
 
     except Exception as e:
-        return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})
+        return JSONResponse(content={"response": f"Erro ao processar a pergunta ask: {str(e)}"})

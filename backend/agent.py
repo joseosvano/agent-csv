@@ -47,4 +47,4 @@ class CSVAnalysisAgent:
             result = self.agent.invoke(question)
             return {"output": result}
         except Exception as e:
-            return {"output": f"Erro ao processar a pergunta: {str(e)}"}
+            return {"output": f"Erro ao processar a pergunta analyze_csv: {str(e)}"}

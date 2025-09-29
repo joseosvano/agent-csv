@@ -85,7 +85,7 @@ async def ask(pergunta: str = Form(...)):
             # devolver resposta normal em texto
             return JSONResponse(content={"response": str(saida_json or saida_str)})
     except Exception as e:
-        return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})
+        return JSONResponse(content={"response": f"Erro ao processar a pergunta askgg: {str(e)}"})
 
 def eh_grafico(resposta):
     """

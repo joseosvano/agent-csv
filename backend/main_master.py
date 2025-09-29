@@ -91,7 +91,7 @@ async def ask(pergunta: str = Form(...)):
         response_error = resposta.get("output", "")
         if response_error:
             return JSONResponse(content={"response": response_error})
-        return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})
+        return JSONResponse(content={"response": f"Erro ao processar a pergunta askm: {str(e)}"})
 
 def eh_grafico(resposta):
     print("Verificando se é gráfico:", resposta)
