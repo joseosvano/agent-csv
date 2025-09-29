@@ -1,7 +1,8 @@
 import pandas as pd
-from langchain_groq import ChatGroq  # Substitui ChatOpenAI
+from langchain_groq.chat_models import ChatGroq
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from langchain.memory import ConversationBufferMemory
+from langchain.schema import AIMessage, HumanMessage
 
 class CSVAnalysisAgent:
     def __init__(self, key: str):
@@ -23,6 +24,7 @@ class CSVAnalysisAgent:
         )
 
     def load_file(self, file_path: str):
+        import pandas as pd
         try:
             self.df = pd.read_csv(file_path)
             self.current_file = file_path
@@ -47,4 +49,4 @@ class CSVAnalysisAgent:
             result = self.agent.invoke(question)
             return {"output": result}
         except Exception as e:
-            return {"output": f"Erro ao processar a pergunta analyze_csv: {str(e)}"}
+            return {"output": f"Erro ao processar a pergunta: {str(e)}"}
