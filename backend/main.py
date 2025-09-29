@@ -33,7 +33,7 @@ origins = [
     f'{api_front_url}:8080',
     f'{api_front_url}:5173',
     f'{api_front_url}:3000',
-    "meu-backend-fsrl.onrender.com:10000"
+    "meu-backend-huaf.onrender.com:10000"
 ]
 
 print(origins)
