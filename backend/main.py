@@ -29,6 +29,7 @@ api_front_url = os.getenv('API_FRONT_URL')
 app = FastAPI(title="PHNS CSV Analysis Agent API")
 
 origins = [
+    "*",
     api_front_url,
     f'{api_front_url}:8080',
     f'{api_front_url}:5173',
