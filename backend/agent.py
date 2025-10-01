@@ -24,17 +24,27 @@ class CSVAnalysisAgent:
         )
 
     def load_file(self, file_path: str):
-        self.agent = create_pandas_dataframe_agent(
+        import pandas as pd
+        try:
+            self.df = pd.read_csv(file_path)
+            self.current_file = file_path
+
+            # ⚠️ df primeiro, llm segundo, sem nomear
+            self.agent = create_pandas_dataframe_agent(
                 df=self.df,
                 llm=self.llm,
                 verbose=True,
                 max_iterations=3000,
-                agent_executor_kwargs={
+                                agent_executor_kwargs={
                     "memory": self.memory,
                     "handle_parsing_errors": True
                 },
                 allow_dangerous_code=True
             )
+            return True
+        except Exception as e:
+            print("Erro ao carregar CSV:", e)
+            return False
 
     def analyze_csv(self, question: str):
         if not self.agent:
