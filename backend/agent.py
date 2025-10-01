@@ -24,22 +24,17 @@ class CSVAnalysisAgent:
         )
 
     def load_file(self, file_path: str):
-        try:
-            self.df = pd.read_csv(file_path)
-            self.current_file = file_path
-
-            # Cria o agente usando apenas o LLM Groq
-            self.agent = create_pandas_dataframe_agent(
+        self.agent = create_pandas_dataframe_agent(
                 df=self.df,
                 llm=self.llm,
                 verbose=True,
-                agent_executor_kwargs={"memory": self.memory},
+                max_iterations=3000,
+                agent_executor_kwargs={
+                    "memory": self.memory,
+                    "handle_parsing_errors": True
+                },
                 allow_dangerous_code=True
             )
-            return True
-        except Exception as e:
-            print("Erro ao carregar CSV:", e)
-            return False
 
     def analyze_csv(self, question: str):
         if not self.agent:
