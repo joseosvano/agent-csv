@@ -106,11 +106,10 @@ async def ask(pergunta: str = Form(...)):
                 resposta_final = str(resposta)
         else:
             resposta_final = str(resposta)
-        resposta = resposta_final
 
         print("Resposta do agente:")
-        print(resposta)
-        saida_str = resposta.get("output", "").get("output", "")
+        print(resposta_final)
+        saida_str = resposta_final.get("output", "").get("output", "")
 
         try:
             saida_json = json.loads(limpar_markdown_json(saida_str))
@@ -124,7 +123,7 @@ async def ask(pergunta: str = Form(...)):
             # devolver resposta normal em texto
             return JSONResponse(content={"response": str(saida_json or saida_str)})
     except Exception as e:
-        response_error = resposta.get("output", "")
+        response_error = resposta_final.get("output", "")
         if response_error:
             return JSONResponse(content={"response": response_error})
         return JSONResponse(content={"response": f"Erro ao processar a pergunta askmain: {str(e)}"})
