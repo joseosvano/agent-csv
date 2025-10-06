@@ -88,12 +88,29 @@ async def ask(pergunta: str = Form(...)):
         Pergunta: {pergunta}
         """
         resposta = agent.analyze_csv(pergunta)
+        # Se a saída já vier como dict complexo
+        if isinstance(resposta, dict):
+            # Tenta pegar 'output' direto
+            resposta = resposta.get("output", "").get("output", "")
+            
+            # Se 'output' for outro dict, tenta pegar do chat_history
+            if isinstance(resposta, dict) and "chat_history" in resposta:
+                chat_history = resposta["chat_history"]
+                # Pega a última resposta do AI
+                for msg in reversed(chat_history):
+                    if msg._class.name_ == "AIMessage":
+                        resposta_final = msg.content
+                        break
+            else:
+                resposta_final = str(resposta)
+        else:
+            resposta_final = str(resposta)
+
         print("Resposta do agente:")
-        print(resposta)
-        saida_str = resposta.get("output", "").get("output", "")
+        print(resposta_final)
 
         try:
-            saida_json = json.loads(limpar_markdown_json(saida_str))
+            saida_json = json.loads(limpar_markdown_json(resposta_final))
         except Exception:
             print("Resposta não é JSON válido")
             saida_json = None
