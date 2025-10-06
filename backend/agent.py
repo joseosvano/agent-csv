@@ -1,8 +1,7 @@
 import pandas as pd
-from langchain_groq.chat_models import ChatGroq  # Substitui ChatOpenAI
+from langchain_groq import ChatGroq  # Substitui ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import AIMessage, HumanMessage
 
 class CSVAnalysisAgent:
     def __init__(self, key: str):
@@ -24,21 +23,16 @@ class CSVAnalysisAgent:
         )
 
     def load_file(self, file_path: str):
-        import pandas as pd
         try:
             self.df = pd.read_csv(file_path)
             self.current_file = file_path
 
-            # ⚠️ df primeiro, llm segundo, sem nomear
+            # Cria o agente usando apenas o LLM Groq
             self.agent = create_pandas_dataframe_agent(
                 df=self.df,
                 llm=self.llm,
                 verbose=True,
-                max_iterations=3000,
-                agent_executor_kwargs={
-                    "memory": self.memory,
-                    "handle_parsing_errors": True
-                },
+                agent_executor_kwargs={"memory": self.memory},
                 allow_dangerous_code=True
             )
             return True

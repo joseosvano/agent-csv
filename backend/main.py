@@ -88,30 +88,12 @@ async def ask(pergunta: str = Form(...)):
         Pergunta: {pergunta}
         """
         resposta = agent.analyze_csv(pergunta)
-        
-        # Se a saída já vier como dict complexo
-        if isinstance(resposta, dict):
-            # Tenta pegar 'output' direto
-            resposta = resposta.get("output", "").get("output", "")
-            
-            # Se 'output' for outro dict, tenta pegar do chat_history
-            if isinstance(resposta, dict) and "chat_history" in resposta:
-                chat_history = resposta["chat_history"]
-                # Pega a última resposta do AI
-                for msg in reversed(chat_history):
-                    if msg._class.name_ == "AIMessage":
-                        resposta_final = msg.content
-                        break
-            else:
-                resposta_final = str(resposta)
-        else:
-            resposta_final = str(resposta)
-
         print("Resposta do agente:")
-        print(resposta_final)
+        print(resposta)
+        saida_str = resposta.get("output", "").get("output", "")
 
         try:
-            saida_json = json.loads(limpar_markdown_json(resposta_final))
+            saida_json = json.loads(limpar_markdown_json(saida_str))
         except Exception:
             print("Resposta não é JSON válido")
             saida_json = None
@@ -120,12 +102,12 @@ async def ask(pergunta: str = Form(...)):
             return gerar_grafico_automatico(saida_json)
         else:
             # devolver resposta normal em texto
-            return JSONResponse(content={"response": str(saida_json or resposta_final)})
+            return JSONResponse(content={"response": str(saida_json or saida_str)})
     except Exception as e:
-        response_error = resposta_final.get("output", "")
+        response_error = resposta.get("output", "")
         if response_error:
             return JSONResponse(content={"response": response_error})
-        return JSONResponse(content={"response": f"Erro ao processar a pergunta askmain: {str(e)}"})
+        return JSONResponse(content={"response": f"Erro ao processar a pergunta: {str(e)}"})
 
 def eh_grafico(resposta):
     print("Verificando se é gráfico:", resposta)
