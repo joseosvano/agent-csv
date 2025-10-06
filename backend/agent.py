@@ -32,7 +32,11 @@ class CSVAnalysisAgent:
                 df=self.df,
                 llm=self.llm,
                 verbose=True,
-                agent_executor_kwargs={"memory": self.memory},
+                max_iterations=3000,
+                agent_executor_kwargs={
+                    "memory": self.memory,
+                    "handle_parsing_errors": True
+                },
                 allow_dangerous_code=True
             )
             return True
