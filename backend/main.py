@@ -109,10 +109,9 @@ async def ask(pergunta: str = Form(...)):
 
         print("Resposta do agente:")
         print(resposta_final)
-        saida_str = resposta_final.get("output", "").get("output", "")
 
         try:
-            saida_json = json.loads(limpar_markdown_json(saida_str))
+            saida_json = json.loads(limpar_markdown_json(resposta_final))
         except Exception:
             print("Resposta não é JSON válido")
             saida_json = None
@@ -121,7 +120,7 @@ async def ask(pergunta: str = Form(...)):
             return gerar_grafico_automatico(saida_json)
         else:
             # devolver resposta normal em texto
-            return JSONResponse(content={"response": str(saida_json or saida_str)})
+            return JSONResponse(content={"response": str(saida_json or resposta_final)})
     except Exception as e:
         response_error = resposta_final.get("output", "")
         if response_error:
